@@ -10,6 +10,13 @@
 #define NN_HIDDEN_SIZE 100
 #define NN_OUTPUT_SIZE 9
 #define LEARNING_RATE 0.1
+#define WINNING_STATES 8
+
+static const int WINNING_PATTERNS[WINNING_STATES][3] = {
+    {0, 1, 2},{3, 4, 5},{6, 7, 8},  // Horizontal
+    {0, 3, 6},{1, 4, 7},{2, 5, 8},  // Vertical
+    {0, 4, 8},{2, 4, 6}             // Diagonal
+};
 
 // Game board representation.
 typedef struct {
@@ -180,48 +187,29 @@ void board_to_inputs(GameState *state, float *inputs) {
 /* Check if the game is over (win or tie).
  * Very brutal but fast enough. */
 int check_game_over(GameState *state, char *winner) {
-    // Check rows.
-    for (int i = 0; i < 3; i++) {
-        if (state->board[i*3] != '.' &&
-            state->board[i*3] == state->board[i*3+1] &&
-            state->board[i*3+1] == state->board[i*3+2]) {
-            *winner = state->board[i*3];
+    // Check if game board match a winning state
+    for (int i = 0; i < WINNING_STATES; i++) {
+        char player = state->board[WINNING_PATTERNS[i][0]];
+        
+        if (player != '.' &&
+            player == state->board[WINNING_PATTERNS[i][1]] &&
+            player == state->board[WINNING_PATTERNS[i][2]]) {
+            *winner = player;
             return 1;
         }
-    }
-
-    // Check columns.
-    for (int i = 0; i < 3; i++) {
-        if (state->board[i] != '.' &&
-            state->board[i] == state->board[i+3] &&
-            state->board[i+3] == state->board[i+6]) {
-            *winner = state->board[i];
-            return 1;
-        }
-    }
-
-    // Check diagonals.
-    if (state->board[0] != '.' &&
-        state->board[0] == state->board[4] &&
-        state->board[4] == state->board[8]) {
-        *winner = state->board[0];
-        return 1;
-    }
-    if (state->board[2] != '.' &&
-        state->board[2] == state->board[4] &&
-        state->board[4] == state->board[6]) {
-        *winner = state->board[2];
-        return 1;
     }
 
     // Check for tie (no free tiles left).
-    int empty_tiles = 0;
-    for (int i = 0; i < 9; i++) {
-        if (state->board[i] == '.') empty_tiles++;
-    }
-    if (empty_tiles == 0) {
-        *winner = 'T';  // Tie
-        return 1;
+    for(int i = 0; i < 9; i++) {
+        if(state->board[i] == '.') {
+            break;
+        }
+
+        // Last iteration hence tie
+        if(i == 8) {
+            *winner = 'T';
+            return 1;
+        }
     }
 
     return 0; // Game continues.
